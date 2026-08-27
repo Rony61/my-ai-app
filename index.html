@@ -3,48 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro AI Copywriter</title>
+  <title>AI Resume & ATS Reviewer</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
 
-  <div class="w-full max-w-2xl bg-slate-800 rounded-xl shadow-2xl p-6 border border-slate-700">
-    <h1 class="text-2xl font-bold text-center mb-1 text-indigo-400">🚀 Pro AI Copywriter</h1>
-    <p class="text-sm text-slate-400 text-center mb-6">Convert product features into high-converting marketing copy</p>
+  <div class="w-full max-w-3xl bg-slate-800 rounded-xl shadow-2xl p-6 border border-slate-700 my-8">
+    <h1 class="text-2xl font-bold text-center mb-1 text-indigo-400">📄 AI Resume & ATS Reviewer</h1>
+    <p class="text-sm text-slate-400 text-center mb-6">Get instant ATS feedback, impact score, and bullet-point improvements</p>
 
+    <!-- Target Job Title Input -->
     <div class="mb-4">
-      <label class="block text-xs font-semibold mb-1 text-slate-300">PRODUCT DETAILS & BENEFITS:</label>
-      <textarea id="promptInput" rows="4" placeholder="e.g., Selling wireless noise-canceling headphones for $49 with 30-hour battery life..." class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+      <label class="block text-xs font-semibold mb-1 text-slate-300">TARGET JOB TITLE / INDUSTRY:</label>
+      <input type="text" id="jobTitleInput" placeholder="e.g., Senior Test Design Lead, Software Engineer, Data Analyst" class="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+    </div>
+
+    <!-- Resume Text Area -->
+    <div class="mb-4">
+      <label class="block text-xs font-semibold mb-1 text-slate-300">PASTE RESUME TEXT / BULLET POINTS:</label>
+      <textarea id="promptInput" rows="6" placeholder="Paste your resume work experience or summary here..." class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
     </div>
 
     <button onclick="generateAIResponse()" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-lg transition-all text-white flex justify-center items-center gap-2">
-      <span>Generate Marketing Copy</span>
+      <span>Review Resume</span>
     </button>
 
     <div class="mt-6">
-      <label class="block text-xs font-semibold mb-1 text-slate-300">GENERATED CAMPAIGN COPY:</label>
-      <div id="outputContainer" class="w-full min-h-[140px] p-4 rounded-lg bg-slate-900 border border-slate-700 text-sm whitespace-pre-wrap text-slate-200">
-        <em>Your generated campaign ad will appear here...</em>
+      <label class="block text-xs font-semibold mb-1 text-slate-300">DETAILED FEEDBACK & ATS SCORE:</label>
+      <div id="outputContainer" class="w-full min-h-[160px] p-4 rounded-lg bg-slate-900 border border-slate-700 text-sm whitespace-pre-wrap text-slate-200">
+        <em>Your detailed resume review will appear here...</em>
       </div>
     </div>
   </div>
 
   <script>
     async function generateAIResponse() {
-      const prompt = document.getElementById('promptInput').value.trim();
+      const jobTitle = document.getElementById('jobTitleInput').value.trim();
+      const resumeText = document.getElementById('promptInput').value.trim();
       const output = document.getElementById('outputContainer');
       const btn = document.getElementById('submitBtn');
 
-      if (!prompt) {
-        alert('Please enter product details first.');
+      if (!resumeText) {
+        alert('Please paste your resume text first.');
         return;
       }
 
       btn.disabled = true;
-      btn.innerText = 'Crafting Copy...';
-      output.innerText = 'Analyzing product parameters...';
+      btn.innerText = 'Analyzing Resume...';
+      output.innerText = 'Evaluating ATS readability and impact metrics...';
 
-      const systemInstruction = "You are a world-class direct-response copywriter. Transform the user's raw product notes into 1 Facebook Ad, 1 High-Converting Email Subject Line, and 3 Bulleted Selling Points. Keep the tone persuasive and crisp.";
+      const prompt = `Target Role: ${jobTitle || 'General Professional'}\n\nResume Content:\n${resumeText}`;
+
+      const systemInstruction = `You are an expert Technical Recruiter and ATS Optimization Consultant. Analyze the provided resume text against the target job role. Provide structured feedback in 4 clear sections:
+1. **Overall ATS Score (Out of 100)**: Give a numeric score with a 1-sentence breakdown.
+2. **Key Strengths**: 2 strong points in the draft.
+3. **Missing Keywords & Critical Gaps**: Important technical skills, tools, or action verbs missing for this target role.
+4. **Improved Bullet Points**: Rewrite 2-3 of the weakest bullets using strong action verbs and quantified achievements (metrics/percentages).`;
 
       try {
         const response = await fetch('/api/generate', {
@@ -64,7 +78,7 @@
         output.innerText = `Network Error: ${error.message}`;
       } finally {
         btn.disabled = false;
-        btn.innerText = 'Generate Marketing Copy';
+        btn.innerText = 'Review Resume';
       }
     }
   </script>
