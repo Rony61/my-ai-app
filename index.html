@@ -15,16 +15,16 @@
       <button onclick="clearChat()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-slate-300">Clear Chat</button>
     </div>
 
-    <!-- Chat Container -->
-    <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm">
+    <!-- Chat Box -->
+    <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm flex flex-col">
       <div class="bg-slate-700/50 p-3 rounded-lg max-w-[85%] self-start text-slate-300">
-        Hello! I can answer questions, review resumes, code, or generate text. What are we working on?
+        Hello! I am your versatile AI assistant. Ask me anything—code debugging, writing, resume reviews, or general knowledge!
       </div>
     </div>
 
-    <!-- Input Box -->
+    <!-- Input Bar -->
     <div class="p-4 border-t border-slate-700 bg-slate-800 flex gap-2">
-      <textarea id="promptInput" rows="1" placeholder="Type a message or paste any text..." class="flex-1 p-3 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+      <textarea id="promptInput" rows="1" placeholder="Ask anything..." class="flex-1 p-3 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
       <button onclick="sendMessage()" id="sendBtn" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-lg text-white transition-all">Send</button>
     </div>
   </div>
@@ -35,22 +35,26 @@
     async function sendMessage() {
       const input = document.getElementById('promptInput');
       const text = input.value.trim();
+      const btn = document.getElementById('sendBtn');
       if (!text) return;
 
       const chatBox = document.getElementById('chatBox');
       
-      // Render User Message
+      // Render user input
       chatBox.innerHTML += `<div class="bg-indigo-600 text-white p-3 rounded-lg max-w-[85%] self-end ml-auto">${escapeHtml(text)}</div>`;
       input.value = '';
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      // Prepare payload
       chatHistory.push({ role: 'user', parts: [{ text }] });
 
-      // Create Bot Bubble
+      // Create loading placeholder
       const botMsgDiv = document.createElement('div');
       botMsgDiv.className = 'bg-slate-700/50 text-slate-200 p-3 rounded-lg max-w-[85%] self-start whitespace-pre-wrap';
+      botMsgDiv.innerText = 'Thinking...';
       chatBox.appendChild(botMsgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      btn.disabled = true;
 
       try {
         const response = await fetch('/api/generate', {
@@ -59,34 +63,19 @@
           body: JSON.stringify({ contents: chatHistory })
         });
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = '';
+        const data = await response.json();
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-
-          // Parse SSE Chunks
-          const lines = chunk.split('\n');
-          for (let line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const parsed = JSON.parse(line.replace('data: ', ''));
-                const newText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                fullResponse += newText;
-                botMsgDiv.innerText = fullResponse;
-                chatBox.scrollTop = chatBox.scrollHeight;
-              } catch (e) {}
-            }
-          }
+        if (data.text) {
+          botMsgDiv.innerText = data.text;
+          chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+        } else {
+          botMsgDiv.innerText = `Error: ${data.error || 'Failed to generate response'}`;
         }
-
-        chatHistory.push({ role: 'model', parts: [{ text: fullResponse }] });
-
       } catch (err) {
-        botMsgDiv.innerText = 'Error processing request.';
+        botMsgDiv.innerText = `Network Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
 
